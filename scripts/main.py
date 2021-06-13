@@ -4,12 +4,12 @@ from Params import *
 from SimParams import *
 from Variables import *
 from Subscribers import *
+from Publishers import *
 from environment import *
 from Utils import *
 from Rviz import *
 from topoexpsearch_FVE.srv import pred_FVE
 from topoexpsearch_planner.srv import get_path_GEST
-from std_msgs.msg import String
 
 if __name__ == '__main__':
     rospy.init_node('topoexpsearch')
@@ -34,6 +34,7 @@ if __name__ == '__main__':
 
     # declare subscriber & publisher
     sub = Subscribers(q_t=q_t, q_m=q_m, q_r=q_r, q_h=q_h, q_f=q_f, q_p=q_p, q_NN=q_NN, p=p)
+    pub = Publishers()
 
     # set iterator frequency
     freq = 1.0
@@ -70,12 +71,12 @@ if __name__ == '__main__':
                 FVE = get_nodes_FVE(q_NN['global_network'], p, srv_pred_FVE)
                 nx.set_node_attributes(q_NN['global_network'], FVE, "value")
 
-                # plan (call topoexpsearch_planner)
+                # ===== plan (call topoexpsearch_planner) ====
                 path = get_path(q_m['map_msg'], q_NN['global_network'], srv_get_path_GEST)
                 goal = path[-1]
 
-                # send goal
-                
+                # ===== send goal =====
+                msg = pub.assign_cmd_goal(goal, 1.0)
 
             #
             q_f['processing_FVE_plan'] = False

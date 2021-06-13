@@ -30,7 +30,7 @@ class environment():
 
         # set groundtruth map
         self.getinfo_env()
-        img = cv2.imread('../dataset/categorized_maps/' + self.map_name + '.png')
+        img = cv2.imread('/home/lwcubuntu/data/KTH_dataset/categorized_maps/' + self.map_name + '.png')
         img_flipped = cv2.flip(img, 0)
         self.GT_map = img_flipped
 

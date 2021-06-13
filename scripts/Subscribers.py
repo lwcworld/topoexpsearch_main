@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import rospy
+import numpy as np
 from sensor_msgs.msg import PointCloud
 from nav_msgs.msg import Path, Odometry, OccupancyGrid
 from tuw_multi_robot_msgs.msg import Graph, Vertex
-import numpy as np
 from actionlib_msgs.msg import GoalStatusArray
 import copy
 
@@ -30,12 +30,12 @@ class Subscribers():
     def cb_v(self, msg):
         if self.print_subscribe == True:
             print('[subscribed] : ' + 'voronoi')
+
         self.q_t['NN']      = msg.header.stamp.to_sec()
-        self.q_NN['msg'] = msg
+        self.q_NN['NN_msg'] = msg
         self.q_NN['origin_x'] = msg.origin.position.x
         self.q_NN['origin_y'] = msg.origin.position.y
         self.q_NN['vertices'] = msg.vertices
-
 
     def cb_m(self, msg):
         if self.print_subscribe == True:
@@ -47,6 +47,7 @@ class Subscribers():
         self.q_m['height'] = msg.info.height  # [pix]
         self.q_m['origin'] = (msg.info.origin.position.x, msg.info.origin.position.y)
         self.q_m['map_2d'] = np.array(self.q_m['map_1d']).reshape(self.q_m['height'], self.q_m['width'])
+        self.q_f['new_map'] = True
 
     def cb_ot(self, msg):
         # callback : /exploration_transform
@@ -116,4 +117,4 @@ class Subscribers():
             self.q_p['status'] = msg.status_list[0].status
             if prev_status ==1 and self.q_p['status'] != 1:
                 self.q_t['robot_stop'] = msg.header.stamp.to_sec()
-                self.q_f['map_used'] = False
+                # self.q_f['new_map'] = True

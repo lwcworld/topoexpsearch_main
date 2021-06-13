@@ -15,11 +15,17 @@ class param:
         self.scale_per   = 10.0
 
         #
-        self.class_level = 5
+        self.N_c = 5
 
         self.remove_small_area    = True
         self.small_area_threshold = 4.0
         self.gate                 = 5.0
+
+        # ===== parameters for FVE =====
+        self.p_E = [0.5, 0.1, 0.1, 0.1, 0.1] # [1xN_c] target existence probability vector
+        self.K = 3 # rollout length (K)
+        self.M = 2 # high member cut (M)
+        self.gamma = 0.5 # discount factor (gamma)
 
 
     def __getitem__(self, key):

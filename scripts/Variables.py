@@ -128,7 +128,11 @@ class flag:
         self.ET = False # processing of exploration transform
         self.OT = False
 
-        self.map_used = False
+
+        self.new_map = False
+        self.new_NN = False
+
+        self.processing_FVE_plan = False
 
     def __getitem__(self, key):
         return getattr(self, key)

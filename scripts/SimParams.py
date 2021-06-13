@@ -10,9 +10,9 @@ class simparam:
         # frequency in simulation time
         self.freq_est  = 1.
         self.freq_ctrl = 1.
-        self.freq_rviz = 1.
+        self.freq_rviz = 0.2
 
-        self.cmap_category = {'lab': [(0, 0, 255)],
+        self.cmap_floorplan = {'lab': [(0, 0, 255)],
                              'corridor': [(0, 150, 255), (255, 255, 0)],
                              'share': [(0, 255, 255)],
                              'storage': [(0, 255, 0)],
@@ -21,9 +21,13 @@ class simparam:
                              'food': [(0, 255, 255)],
                              'pass': [(255,255,255)]}
 
-        # self.imap_category = {'lab':0, 'corridor':1, 'share':2, 'storage':3, 'toilet':4, 'maintenence':5, 'food':6}
         self.imap_category = {'lab': 1, 'corridor': 2, 'share': 3, 'storage': 4, 'toilet': 5, 'maintenence': 4, 'food': 3, 'pass':0}
 
+        self.cmap_rviz = {1:(0, 0, 255),
+                          2:(0, 150, 255),
+                          3:(0, 255, 255),
+                          4:(0, 255, 0),
+                          5:(255, 0, 0)}
         # directories
         self.dir_log = '../dataset/log/'
 

@@ -5,14 +5,12 @@ from jenks_natural_breaks import classify
 import networkx as nx
 import matplotlib.pyplot as plt
 from Variables import Node_voronoi
-
+from std_msgs.msg import String
 
 def get_voronoi(q_NN, q_m, q_r, q_f, q_env, p, sp):
     origin_x = q_NN['origin_x']
     origin_y = q_NN['origin_y']
     vertices = q_NN['vertices']
-
-    # q_m, q_r, p = scale_data(q_m, q_r, p)
 
     # get node/edge pos info from segments
     pos_nodes = []
@@ -166,7 +164,7 @@ def get_local_map_arbitrary(glo_map, glo_pos, r=20):
 def assign_category_to_graph(q_NN, q_m, q_env, sp):
     graph = copy.deepcopy(q_NN['global_network'])
     floorplan_img = copy.deepcopy(q_env.GT_map)
-    cmap_category = sp['cmap_category']
+    cmap_floorplan = sp['cmap_floorplan']
 
     idx_nodes = [x for x, y in graph.nodes(data=True) if 1]
     for i_n in idx_nodes:
@@ -175,7 +173,7 @@ def assign_category_to_graph(q_NN, q_m, q_env, sp):
         rgb_node_list = floorplan_img[pos_node_img[1], pos_node_img[0], :]
         rgb_node = (rgb_node_list[0], rgb_node_list[1], rgb_node_list[2])
 
-        for category, colormaps in cmap_category.items():
+        for category, colormaps in cmap_floorplan.items():
             if rgb_node in colormaps:
                 graph.nodes[i_n]['type_str'] = category
                 graph.nodes[i_n]['type'] = sp['imap_category'][category]
@@ -252,7 +250,7 @@ def get_visibility_map(q_m, p):
 
 def get_classification(q_m, p):
     vis_map = copy.deepcopy(q_m['vis_map'])
-    levels = p['class_level']
+    levels = p['N_c']
     vis = vis_map.flatten()
     vis = vis[vis != 0]
     breaks = classify(data=vis, n_classes=levels)
@@ -323,7 +321,6 @@ def cutoff_dup_nodes(network):
         else:
             nodes.remove(max(nodes))
         for i_n, node in enumerate(nodes):
-            print(node)
             network.remove_node(node)
     return network
 
@@ -539,10 +536,63 @@ def reduce_graph(G_in, sp):
     idx_pass = [k for k,v in category.items() if v=='pass']
 
     for node in idx_pass:
-        print(node)
-        print(nx.get_node_attributes(G, 'type_str'))
         node_neighbors = list(nx.neighbors(G, node))
         node_nonpass = [n for n in node_neighbors if G.nodes[n]['type_str'] != 'pass'][0]
-        print(node_nonpass)
         G = nx.contracted_nodes(G, node_nonpass, node)
     return G
+
+def get_dict_NN_for_FVE(G):
+    # convert NN to dict
+    dict_G = {}
+    E = [[v1, v2] for (v1, v2) in list(nx.edges(G))]
+    C = {str(n): str(c) for n, c in nx.get_node_attributes(G, 'type').items()}
+    dict_G["edges"] = E
+    dict_G["features"] = C
+
+    return dict_G
+
+def get_nodes_FVE(NN, p, srv_pred_FVE):
+    # jsonstr encoded navigation network
+    NN_jsonstr = get_dict_NN_for_FVE(NN)
+    msg_NN_jsonstr = String()
+    msg_NN_jsonstr.data = str(NN_jsonstr)
+
+    # intereset node
+    to_go_dict = nx.get_node_attributes(NN, 'to_go')
+
+    # [1xN_c] target existence probability vector
+    msg_p_E = String()
+    msg_p_E.data = str(p.p_E)
+
+    FVE = {}
+    for v, to_go in to_go_dict.items():
+        if to_go == True:
+            FVE_v = srv_pred_FVE(msg_NN_jsonstr, v, msg_p_E, p.N_c, p.M, p.K, p.gamma)
+        else:
+            FVE_v = 0
+        FVE[v] = FVE_v
+
+    return FVE
+
+def get_jsonstr_graph_for_planner(NN):
+    edges = list(NN.edges())
+    value = nx.get_node_attributes(NN, 'value')
+    pos = nx.get_node_attributes(NN, 'pos')
+    isrobot = nx.get_node_attributes(NN, 'isrobot')
+    to_go = nx.get_node_attributes(NN, 'to_go')
+    G_json = {"edges": edges, "value": value, "isrobot": isrobot, "pos": pos, "to_go": to_go}
+    G_json_str = str(G_json)
+
+    return G_json_str
+
+def get_path(map_msg, NN, srv_get_path_GEST):
+    G_json_str = get_jsonstr_graph_for_planner(NN)
+    msg_NN_jsonstr = String()
+    msg_NN_jsonstr.data = G_json_str
+
+    output = srv_get_path_GEST(map_msg, msg_NN_jsonstr, [])
+    path_msg = output.path
+    path = [(point.pose.position.x, point.pose.position.y) for point in path_msg.poses]
+
+    return path
+

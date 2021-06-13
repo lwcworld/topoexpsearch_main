@@ -78,7 +78,6 @@ if __name__ == '__main__':
                 # ===== send goal =====
                 msg = pub.assign_cmd_goal(goal, 1.0)
 
-            #
             q_f['processing_FVE_plan'] = False
 
         # ===== rviz ===== let's make it to another node
@@ -93,5 +92,4 @@ if __name__ == '__main__':
             count = count + 1
 
         rate.sleep()
-
 

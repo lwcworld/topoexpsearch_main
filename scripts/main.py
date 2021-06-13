@@ -76,7 +76,15 @@ if __name__ == '__main__':
                 goal = path[-1]
 
                 # ===== send goal =====
-                msg = pub.assign_cmd_goal(goal, 1.0)
+                msg_goal = pub.assign_cmd_goal(goal, 1.0)
+                pub.pub_cmd_goal.publish(msg_goal)
+
+                q_f['new_goal'] = True
+
+            if q_f['new_goal'] == True:
+                q_f['new_goal'] = False
+                msg_NN_jsonstr = pub.assign_NN(q_NN['global_network'], ['value', 'pos', 'isrobot', 'to_go', 'type'])
+                pub.pub_NN(msg_NN_jsonstr)
 
             q_f['processing_FVE_plan'] = False
 

@@ -574,19 +574,22 @@ def get_nodes_FVE(NN, p, srv_pred_FVE):
 
     return FVE
 
-def get_jsonstr_graph_for_planner(NN):
+def get_jsonstr_graph(NN, attr_list):
+
+    G_json = {}
     edges = list(NN.edges())
-    value = nx.get_node_attributes(NN, 'value')
-    pos = nx.get_node_attributes(NN, 'pos')
-    isrobot = nx.get_node_attributes(NN, 'isrobot')
-    to_go = nx.get_node_attributes(NN, 'to_go')
-    G_json = {"edges": edges, "value": value, "isrobot": isrobot, "pos": pos, "to_go": to_go}
+    G_json['edges'] = edges
+
+    for attr in attr_list:
+        dict_attr = nx.get_node_attributes(NN, attr)
+        G_json[attr] = dict_attr
+
     G_json_str = str(G_json)
 
     return G_json_str
 
 def get_path(map_msg, NN, srv_get_path_GEST):
-    G_json_str = get_jsonstr_graph_for_planner(NN)
+    G_json_str = get_jsonstr_graph(NN, ['value', 'pos', 'isrobot', 'to_go'])
     msg_NN_jsonstr = String()
     msg_NN_jsonstr.data = G_json_str
 

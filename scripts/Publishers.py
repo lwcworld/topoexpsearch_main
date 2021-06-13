@@ -2,12 +2,15 @@
 import rospy
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped, Point
+from std_msgs.msg import String
 import tf
+from Utils import *
 
 class Publishers():
     def __init__(self):
         # ======== ROS communicators declaration ========z
-        self.pub_cmd_goal = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
+        self.pub_cmd_goal = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=5)
+        self.pub_NN = rospy.Publisher("/NN", String, queue_size=5)
 
     def assign_cmd_goal(self, P, theta=0.0):
         msg = PoseStamped()
@@ -24,3 +27,10 @@ class Publishers():
         msg.pose.orientation.z = quaternion[2]
         msg.pose.orientation.w = quaternion[3]
         return msg
+
+    def assign_NN(self, NN, attr_list):
+        G_json_str = get_jsonstr_graph(NN, attr_list)
+        msg_NN_jsonstr = String()
+        msg_NN_jsonstr.data = G_json_str
+
+        return msg_NN_jsonstr

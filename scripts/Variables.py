@@ -131,6 +131,7 @@ class flag:
 
         self.new_map = False
         self.new_NN = False
+        self.new_goal = False
 
         self.processing_FVE_plan = False
 

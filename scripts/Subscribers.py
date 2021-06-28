@@ -41,6 +41,7 @@ class Subscribers():
         if self.print_subscribe == True:
             print('[subscribed] : ' + 'map')
         self.q_t['map'] = msg.header.stamp.to_sec()
+        self.q_m['map_msg'] = msg
         self.q_m['map_1d'] = msg.data
         self.q_m['res'] = msg.info.resolution  # [m]
         self.q_m['width'] = msg.info.width  # [pix]
@@ -117,4 +118,4 @@ class Subscribers():
             self.q_p['status'] = msg.status_list[0].status
             if prev_status ==1 and self.q_p['status'] != 1:
                 self.q_t['robot_stop'] = msg.header.stamp.to_sec()
-                # self.q_f['new_map'] = True
+                self.q_p['has_plan'] = False

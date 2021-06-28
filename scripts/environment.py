@@ -30,9 +30,10 @@ class environment():
 
         # set groundtruth map
         self.getinfo_env()
-        img = cv2.imread('/home/lwcubuntu/data/KTH_dataset/categorized_maps/' + self.map_name + '.png')
-        img_flipped = cv2.flip(img, 0)
-        self.GT_map = img_flipped
+        if self.map_name != []:
+            img = cv2.imread('/home/lwcubuntu/data/KTH_dataset/categorized_maps/' + self.map_name + '.png')
+            img_flipped = cv2.flip(img, 0)
+            self.GT_map = img_flipped
 
         # self.spawn_agent()
         # self.delete_agent()
@@ -211,6 +212,15 @@ class environment():
         ret = del_model_prox('floorplan_' + self.map_name)
         success = ret.success
         return success
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        if hasattr(self, key):
+            return setattr(self, key, value)
+        else:
+            print('not defined variable')
 
 if __name__=='__main__':
     env = environment()

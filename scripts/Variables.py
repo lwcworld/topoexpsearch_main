@@ -78,6 +78,7 @@ class plan:
     def __init__(self):
         self.path = [[], [], []] # exploration_transform pointclouds list
         self.status = 0 # 1: ongoing, 0 : finished
+        self.has_plan = False
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -128,7 +129,6 @@ class flag:
         self.ET = False # processing of exploration transform
         self.OT = False
 
-
         self.new_map = False
         self.new_NN = False
         self.new_goal = False
@@ -143,3 +143,4 @@ class flag:
             return setattr(self, key, value)
         else:
             print('not defined variable')
+

@@ -66,14 +66,19 @@ def get_voronoi(q_NN, q_m, q_r, q_f, q_env, p, sp):
     q_NN['global_network'], mapping = relabel_network(q_NN['global_network'])
 
     q_NN['global_network'] = assign_category_to_graph(q_NN, q_m, q_env, sp)
+    q_NN['global_network'] = validate_to_go(q_NN['global_network'], q_m, p)
+
     q_NN['global_network'] = reduce_graph(q_NN['global_network'], sp)
 
-    q_NN['global_network'] = validate_to_go(q_NN['global_network'], q_m, p)
+
+
+
+    q_NN['global_network'], _ = relabel_network(q_NN['global_network'])
 
     pos = nx.get_node_attributes(q_NN['global_network'], 'pos')
     labels = nx.get_node_attributes(q_NN['global_network'], 'pos')
-    nx.draw(q_NN['global_network'], pos, labels=labels)
-    plt.show()
+    # nx.draw(q_NN['global_network'], pos, labels=labels)
+    # plt.show()
 
     # # draw plt
     # pos = nx.get_node_attributes(q_NN['global_network'], 'pos')
@@ -111,12 +116,12 @@ def validate_to_go(NN, q_m, p):
         x_pix_scaled = int(x_pix * scale_per / 100.)
         y_pix_scaled = int(y_pix * scale_per / 100.)
 
-        loc_map, loc_pos = get_local_map_arbitrary2(map_2d_1max_scaled, (x_pix_scaled, y_pix_scaled), r_scaled-5)
+        loc_map, loc_pos = get_local_map_arbitrary2(map_2d_1max_scaled, (x_pix_scaled, y_pix_scaled), r_scaled)
 
         candidate = False
         for (j,i) in ((s0, s1) for s0 in range(0,loc_map.shape[0]) for s1 in range(0,loc_map.shape[1])):
             dist = get_dist(loc_pos, (i,j))
-            if (dist <= r_scaled-5) and visible(loc_map, loc_pos, (i,j)):
+            if (dist <= r_scaled) and visible(loc_map, loc_pos, (i,j)):
                 if (loc_map[j,i] ==  0.5):
                     candidate = True
                     num += 1
@@ -178,6 +183,13 @@ def assign_category_to_graph(q_NN, q_m, q_env, sp):
                 graph.nodes[i_n]['type_str'] = category
                 graph.nodes[i_n]['type'] = sp['imap_category'][category]
                 break
+
+    for i_n in idx_nodes:
+        if graph.nodes[i_n]['type'] == -1:
+            # graph.remove_node(i_n)
+            neighbor = list(nx.neighbors(graph, i_n))[0]
+            graph.nodes[i_n]['type'] = graph.nodes[neighbor]['type']
+            graph.nodes[i_n]['type_str'] = graph.nodes[neighbor]['type_str']
     return graph
 
 def convert_pos_cart2img(pos_cart, res, dim_img):
@@ -188,7 +200,6 @@ def convert_pos_cart2img(pos_cart, res, dim_img):
     pos_img_y = int(np.floor(y/res + dim_img[0]/2.))
 
     return (pos_img_x, pos_img_y)
-
 
 def get_dist(start, end):
     (x0, y0), (x1, y1) = start, end
@@ -382,7 +393,7 @@ def scale_map(map, p, scale_percent=100):
     occ_mask_resized = cv2.resize(occ_mask, dim, interpolation=cv2.INTER_AREA)
     unknown_mask_resized = (unknown_mask_resized > 0.5).astype(float)
     free_mask_resized = (free_mask_resized > 0.5).astype(float)
-    occ_mask_resized = (occ_mask_resized > 0.000001).astype(float)
+    occ_mask_resized = (occ_mask_resized > 0.01).astype(float)
 
     map_resized = np.zeros(dim)
 
@@ -487,7 +498,7 @@ def reduce_graph(G_in, sp):
         G_c_s_list = list(nx.connected_component_subgraphs(G_c))
 
         for i_G, G_c_s in enumerate(G_c_s_list):
-            if nx.number_of_nodes(G_c_s) > 8:
+            if nx.number_of_nodes(G_c_s) > 15:
                 centrality = nx.edge_betweenness_centrality(G_c_s)
 
                 edges_cycle = []
@@ -546,12 +557,17 @@ def get_dict_NN_for_FVE(G):
     dict_G = {}
     E = [[v1, v2] for (v1, v2) in list(nx.edges(G))]
     C = {str(n): str(c) for n, c in nx.get_node_attributes(G, 'type').items()}
+    T = {str(n): str(t) for n, t in nx.get_node_attributes(G, 'to_go').items()}
+
     dict_G["edges"] = E
     dict_G["features"] = C
+    dict_G["to_go"] = T
 
     return dict_G
 
 def get_nodes_FVE(NN, p, srv_pred_FVE):
+    # PI : 1(MBD-GSIM), 2(FSE)
+
     # jsonstr encoded navigation network
     NN_jsonstr = get_dict_NN_for_FVE(NN)
     msg_NN_jsonstr = String()
@@ -567,7 +583,8 @@ def get_nodes_FVE(NN, p, srv_pred_FVE):
     FVE = {}
     for v, to_go in to_go_dict.items():
         if to_go == True:
-            FVE_v = srv_pred_FVE(msg_NN_jsonstr, v, msg_p_E, p.N_c, p.M, p.K, p.gamma)
+            msg = srv_pred_FVE(msg_NN_jsonstr, v, msg_p_E, p.N_c, p.M, p.K, p.gamma)
+            FVE_v = msg.p_o
         else:
             FVE_v = 0
         FVE[v] = FVE_v
@@ -575,10 +592,11 @@ def get_nodes_FVE(NN, p, srv_pred_FVE):
     return FVE
 
 def get_jsonstr_graph(NN, attr_list):
-
     G_json = {}
     edges = list(NN.edges())
     G_json['edges'] = edges
+
+    # print(NN.nodes(data=True))
 
     for attr in attr_list:
         dict_attr = nx.get_node_attributes(NN, attr)
@@ -592,10 +610,9 @@ def get_path(map_msg, NN, srv_get_path_GEST):
     G_json_str = get_jsonstr_graph(NN, ['value', 'pos', 'isrobot', 'to_go'])
     msg_NN_jsonstr = String()
     msg_NN_jsonstr.data = G_json_str
-
-    output = srv_get_path_GEST(map_msg, msg_NN_jsonstr, [])
+    np.save('msg_NN', msg_NN_jsonstr)
+    output = srv_get_path_GEST(map_msg, msg_NN_jsonstr)
     path_msg = output.path
     path = [(point.pose.position.x, point.pose.position.y) for point in path_msg.poses]
 
     return path
-

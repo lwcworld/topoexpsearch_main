@@ -11,6 +11,9 @@ class Publishers():
         # ======== ROS communicators declaration ========z
         self.pub_cmd_goal = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=5)
         self.pub_NN = rospy.Publisher("/NN", String, queue_size=5)
+        self.pub_dummy_goal_MBD_GSIM = rospy.Publisher("/goal_dummy_MBD_GSIM", PoseStamped, queue_size=5)
+        self.pub_dummy_goal_FSE = rospy.Publisher("/goal_dummy_FSE", PoseStamped, queue_size=5)
+        self.pub_dummy_goal_hector = rospy.Publisher("/goal_dummy_hector", PoseStamped, queue_size=5)
 
     def assign_cmd_goal(self, P, theta=0.0):
         msg = PoseStamped()

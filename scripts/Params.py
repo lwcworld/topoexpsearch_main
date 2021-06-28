@@ -22,11 +22,13 @@ class param:
         self.gate                 = 5.0
 
         # ===== parameters for FVE =====
-        self.p_E = [0.5, 0.1, 0.1, 0.1, 0.1] # [1xN_c] target existence probability vector
+        self.p_E = [0.6, 0.1, 0.1, 0.1, 0.1] # [1xN_c] target existence probability vector
+        # self.p_E = [0.1, 0.1, 0.1, 0.1, 0.6] # [1xN_c] target existence probability vector
+        # self.p_E = [0.1, 0.1, 0.6, 0.1, 0.1]  # [1xN_c] target existence probability vector
+
         self.K = 3 # rollout length (K)
         self.M = 2 # high member cut (M)
-        self.gamma = 0.5 # discount factor (gamma)
-
+        self.gamma = 0.8 # discount factor (gamma)
 
     def __getitem__(self, key):
         return getattr(self, key)

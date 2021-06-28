@@ -12,7 +12,7 @@ from topoexpsearch_FVE.srv import pred_FVE
 from topoexpsearch_planner.srv import get_path_GEST
 
 if __name__ == '__main__':
-    rospy.init_node('topoexpsearch')
+    rospy.init_node('topoexpsearch_main')
 
     # declare classes
     sp    = simparam()
@@ -28,9 +28,11 @@ if __name__ == '__main__':
 
     # wait for FVE & GEST server
     rospy.wait_for_service('pred_FVE')
-    rospy.wait_for_service('get_path_GEST')
+    print('service FVE is loaded')
+    rospy.wait_for_service('get_GEST')
+    print('service GEST is loaded')
     srv_pred_FVE = rospy.ServiceProxy('pred_FVE', pred_FVE)
-    srv_get_path_GEST = rospy.ServiceProxy('get_path_GEST', get_path_GEST)
+    srv_get_path_GEST = rospy.ServiceProxy('get_GEST', get_path_GEST)
 
     # declare subscriber & publisher
     sub = Subscribers(q_t=q_t, q_m=q_m, q_r=q_r, q_h=q_h, q_f=q_f, q_p=q_p, q_NN=q_NN, p=p)
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         q_t['now'] = rospy.get_rostime().to_time()
 
-        if q_f['processing_FVE_plan'] == False:
+        if q_f['processing_FVE_plan'] == False and q_p['has_plan'] == False:
             q_f['processing_FVE_plan'] = True
 
             # condition to update NN (navigation network)
@@ -59,9 +61,13 @@ if __name__ == '__main__':
 
             print(cond_NN_update)
             if all(cond_NN_update):
-                print('run')
+                print('updating NN')
                 q_f['new_map'] = False
                 q_NN, q_m, q_r, p, q_f = get_voronoi(q_NN, q_m, q_r, q_f, q_env, p, sp)
+
+                # publish NN for visualization
+                msg_NN_jsonstr = pub.assign_NN(q_NN['global_network'], ['value', 'pos', 'isrobot', 'to_go', 'type'])
+                pub.pub_NN.publish(msg_NN_jsonstr)
                 q_f['new_NN'] = True
 
             if q_f['new_NN'] == True:
@@ -75,6 +81,9 @@ if __name__ == '__main__':
                 path = get_path(q_m['map_msg'], q_NN['global_network'], srv_get_path_GEST)
                 goal = path[-1]
 
+                print('===== goal =====')
+                print(goal)
+
                 # ===== send goal =====
                 msg_goal = pub.assign_cmd_goal(goal, 1.0)
                 pub.pub_cmd_goal.publish(msg_goal)
@@ -83,16 +92,9 @@ if __name__ == '__main__':
 
             if q_f['new_goal'] == True:
                 q_f['new_goal'] = False
-                msg_NN_jsonstr = pub.assign_NN(q_NN['global_network'], ['value', 'pos', 'isrobot', 'to_go', 'type'])
-                pub.pub_NN(msg_NN_jsonstr)
+                q_p['has_plan'] = True
 
             q_f['processing_FVE_plan'] = False
-
-        # ===== rviz ===== let's make it to another node
-        # if count % (freq / freq_rviz) == 0 and q_m['global_network'] != []:
-        #     print('publish : rviz')
-        #     rviz_draw_topology(q_m['global_network'], sp)
-        # ================
 
         if count >= freq:
             count = 1

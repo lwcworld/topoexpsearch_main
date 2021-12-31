@@ -24,7 +24,7 @@ class environment():
 
         self.map_exist = False  # 0: empty, 1: map called
         self.map_name = []
-        self.sim_speed = 1.
+        self.sim_speed = 2.
         self.center_floorplan = (0, 0)
         self.GT_map = []
 

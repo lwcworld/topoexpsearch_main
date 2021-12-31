@@ -17,8 +17,8 @@ class Subscribers():
         self.q_p = q_p
         self.q_NN = q_NN
         self.p = p
-        rospy.Subscriber('/hector_exploration_node/exploration_transform', PointCloud, self.cb_et, queue_size=5)
-        rospy.Subscriber('/hector_exploration_node/obstacle_transform', PointCloud, self.cb_ot, queue_size=5)
+        # rospy.Subscriber('/hector_exploration_node/exploration_transform', PointCloud, self.cb_et, queue_size=5)
+        # rospy.Subscriber('/hector_exploration_node/obstacle_transform', PointCloud, self.cb_ot, queue_size=5)
         rospy.Subscriber('/exploration_path', Path, self.cb_p, queue_size=5)
         rospy.Subscriber('/odom', Odometry, self.cb_o, queue_size=5)
         rospy.Subscriber('/map', OccupancyGrid, self.cb_m, queue_size=5)

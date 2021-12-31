@@ -1,2 +1,2 @@
-a = 'True'
-print(bool(a))
+a = 'abc' + 'cd'
+print(a)

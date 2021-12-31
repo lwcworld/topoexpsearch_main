@@ -3,7 +3,7 @@ import numpy as np
 class param:
     def __init__(self):
         # sensor spec
-        self.r            = 7.0 # [m]
+        self.r            = 10.0 # [m]
         self.r_pix_scaled = 0
 
         #
@@ -12,7 +12,7 @@ class param:
         self.def_free    = 1.0
 
         #
-        self.scale_per   = 10.0
+        self.scale_per   = 20.0
 
         #
         self.N_c = 5
@@ -24,11 +24,12 @@ class param:
         # ===== parameters for FVE =====
         self.p_E = [0.6, 0.1, 0.1, 0.1, 0.1] # [1xN_c] target existence probability vector
         # self.p_E = [0.1, 0.1, 0.1, 0.1, 0.6] # [1xN_c] target existence probability vector
+        # self.p_E = [0.75, 0.75, 0.75, 0.75, 0.7]
         # self.p_E = [0.1, 0.1, 0.6, 0.1, 0.1]  # [1xN_c] target existence probability vector
 
-        self.K = 3 # rollout length (K)
-        self.M = 2 # high member cut (M)
-        self.gamma = 0.8 # discount factor (gamma)
+        self.K = 2 # rollout length (K)
+        self.M = 1 # high member cut (M)
+        self.gamma = 0.9 # discount factor (gamma)
 
     def __getitem__(self, key):
         return getattr(self, key)

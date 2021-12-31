@@ -6,10 +6,8 @@ from Variables import *
 from Subscribers import *
 from Publishers import *
 from environment import *
-from Utils import *
 from Rviz import *
-from topoexpsearch_FVE.srv import pred_FVE
-from topoexpsearch_planner.srv import get_path_GEST
+from hector_nav_msgs.srv import GetRobotTrajectory
 
 if __name__ == '__main__':
     rospy.init_node('topoexpsearch_main')
@@ -26,13 +24,9 @@ if __name__ == '__main__':
     q_NN  = NN()
     q_env = environment()
 
-    # wait for FVE & GEST server
-    rospy.wait_for_service('pred_FVE')
-    print('service FVE is loaded')
-    rospy.wait_for_service('get_GEST')
-    print('service GEST is loaded')
-    srv_pred_FVE = rospy.ServiceProxy('pred_FVE', pred_FVE)
-    srv_get_path_GEST = rospy.ServiceProxy('get_GEST', get_path_GEST)
+    # wait for hector
+    rospy.wait_for_service('get_exploration_path')
+    get_exploration_path = rospy.ServiceProxy('get_exploration_path', GetRobotTrajectory)
 
     # declare subscriber & publisher
     sub = Subscribers(q_t=q_t, q_m=q_m, q_r=q_r, q_h=q_h, q_f=q_f, q_p=q_p, q_NN=q_NN, p=p)
@@ -54,37 +48,20 @@ if __name__ == '__main__':
 
             # condition to update NN (navigation network)
             cond_NN_update = [q_t['now'] - q_t['map'] <= sp.threshold_time * q_env.sim_speed,
-                              q_t['now'] - q_t['NN'] <= sp.threshold_time * q_env.sim_speed,
                               q_t['now'] - q_t['odom'] <= sp.threshold_time * q_env.sim_speed,
                               q_t['now'] - q_t['robot_stop'] > sp.threshold_time * q_env.sim_speed,
                               q_f['new_map'] == True]
 
             print(cond_NN_update)
             if all(cond_NN_update):
-                print('updating NN')
-                q_f['new_map'] = False
-                q_NN, q_m, q_r, p, q_f = get_voronoi(q_NN, q_m, q_r, q_f, q_env, p, sp)
+                flag = False
+                while flag == False:
+                    path = get_exploration_path()
+                    if len(path.trajectory.poses)>0:
+                        flag = True
+                goal = (path.trajectory.poses[-1].pose.position.x, path.trajectory.poses[-1].pose.position.y)
 
-                # publish NN for visualization
-                msg_NN_jsonstr = pub.assign_NN(q_NN['global_network'], ['value', 'pos', 'isrobot', 'to_go', 'type'])
-                pub.pub_NN.publish(msg_NN_jsonstr)
-                q_f['new_NN'] = True
-
-            if q_f['new_NN'] == True:
-                q_f['new_NN'] = False
-
-                # ===== FVE (call topoexpsearch_FVE) =====
-                FVE = get_nodes_FVE(q_NN['global_network'], p, srv_pred_FVE)
-                nx.set_node_attributes(q_NN['global_network'], FVE, "value")
-
-                # ===== plan (call topoexpsearch_planner) ====
-                path = get_path(q_m['map_msg'], q_NN['global_network'], srv_get_path_GEST)
-                goal = path[-1]
-
-                print('===== goal =====')
-                print(goal)
-
-                # ===== send goal =====
+                print('goal : ' + str(goal))
                 msg_goal = pub.assign_cmd_goal(goal, 1.0)
                 pub.pub_cmd_goal.publish(msg_goal)
 

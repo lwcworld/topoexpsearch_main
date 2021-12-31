@@ -25,19 +25,21 @@ if __name__ == '__main__':
     if env.map_exist == False:
         # env.spawn_map(map_name_list[22], dir_map = dir_model)
         # print('spawned map : ' + map_name_list[22])
-        50045232
 
         # env.spawn_map('50052751', dir_map = dir_model)
         # print('spawned map : ' + '50052751')
 
-        env.spawn_map('50045232', dir_map = dir_model)
-        print('spawned map : ' + '50045232')
+        # env.spawn_map('50045232', dir_map = dir_model)
+        # print('spawned map : ' + '50045232')
+
+        env.spawn_map('0510025537_Layout1_PLAN2', dir_map = dir_model)
+        print('spawned map : ' + '0510025537_Layout1_PLAN2')
     else:
         print('map already exist : ' + env.map_name)
     print('== spawn map done .. ')
 
     # set agent
     print('== set robot state start ..')
-    env.set_model_state("turtlebot3_burger", -15, -14, 0.0)
+    env.set_model_state("turtlebot3_burger", -10, 1, 0.0)
     print('== set robot state done ..')
     rospy.sleep(1*3)

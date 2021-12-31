@@ -66,9 +66,12 @@ def get_voronoi(q_NN, q_m, q_r, q_f, q_env, p, sp):
     q_NN['global_network'], mapping = relabel_network(q_NN['global_network'])
 
     q_NN['global_network'] = assign_category_to_graph(q_NN, q_m, q_env, sp)
-    q_NN['global_network'] = validate_to_go(q_NN['global_network'], q_m, p)
+
 
     q_NN['global_network'] = reduce_graph(q_NN['global_network'], sp)
+    q_NN['global_network'] = validate_to_go(q_NN['global_network'], q_m, p)
+
+
 
 
 
@@ -106,7 +109,7 @@ def validate_to_go(NN, q_m, p):
 
     to_gos = [x for x, y in graph.nodes(data=True) if 1]
 
-    num = 0
+
     for to_go in to_gos:
         pos_node = graph.nodes[to_go]['pos']
         x = pos_node[0]
@@ -119,6 +122,7 @@ def validate_to_go(NN, q_m, p):
         loc_map, loc_pos = get_local_map_arbitrary2(map_2d_1max_scaled, (x_pix_scaled, y_pix_scaled), r_scaled)
 
         candidate = False
+        num = 0
         for (j,i) in ((s0, s1) for s0 in range(0,loc_map.shape[0]) for s1 in range(0,loc_map.shape[1])):
             dist = get_dist(loc_pos, (i,j))
             if (dist <= r_scaled) and visible(loc_map, loc_pos, (i,j)):
@@ -497,24 +501,28 @@ def reduce_graph(G_in, sp):
         G_c = nx.subgraph(G, nodes_c)
         G_c_s_list = list(nx.connected_component_subgraphs(G_c))
 
-        for i_G, G_c_s in enumerate(G_c_s_list):
-            if nx.number_of_nodes(G_c_s) > 15:
-                centrality = nx.edge_betweenness_centrality(G_c_s)
+        while 1:
+            flag = False
+            for i_G, G_c_s in enumerate(G_c_s_list):
+                if nx.number_of_nodes(G_c_s) > 10:
+                    flag = True
+                    centrality = nx.edge_betweenness_centrality(G_c_s)
 
-                edges_cycle = []
-                try:
-                    edges_cycle = nx.find_cycle(G_c_s)
-                except:
-                    pass
-                edges_acycle = list(G_c_s.edges() - edges_cycle)
-                centrality_acycle = {k:v for (k, v) in centrality.items() if (k in edges_acycle) and v>0}
+                    edges_cycle = []
+                    try:
+                        edges_cycle = nx.find_cycle(G_c_s)
+                    except:
+                        pass
+                    edges_acycle = list(G_c_s.edges() - edges_cycle)
+                    centrality_acycle = {k:v for (k, v) in centrality.items() if (k in edges_acycle) and v>0}
 
+                    edge_center = max(centrality_acycle.keys(), key=(lambda k:centrality_acycle[k]))
+                    G_c_s.remove_edge(edge_center[0], edge_center[1])
 
-                edge_center = max(centrality_acycle.keys(), key=(lambda k:centrality_acycle[k]))
-                G_c_s.remove_edge(edge_center[0], edge_center[1])
-
-                G_c_s_list.remove(G_c_s)
-                G_c_s_list.extend(list(nx.connected_component_subgraphs(G_c_s)))
+                    G_c_s_list.remove(G_c_s)
+                    G_c_s_list.extend(list(nx.connected_component_subgraphs(G_c_s)))
+            if flag == False:
+                break
 
         for G_c_s in G_c_s_list:
             nodes_i = list(G_c_s.nodes())
@@ -524,14 +532,48 @@ def reduce_graph(G_in, sp):
             to_go = any(to_go_i.values())
             isrobot_node = [k for k, v in isrobot_i.items() if v == True]
             if len(isrobot_node) == 0:
-                poses_x = [G.node[nodes_i[0]]['pos'][0]]
-                poses_y = [G.node[nodes_i[0]]['pos'][1]]
-                for node in nodes_i[1:]:
-                    poses_x.append(G.node[node]['pos'][0])
-                    poses_y.append(G.node[node]['pos'][1])
-                    G = nx.contracted_nodes(G, nodes_i[0], node)
+                to_go_node_list = list(to_go_i.keys())
+                if len(to_go_node_list)>0:
+                    # to_go_node = to_go_node_list[0]
+                    # poses_x = G.node[to_go_node]['pos'][0]
+                    # poses_y = G.node[to_go_node]['pos'][1]
+                    # for node in [node for node in nodes_i if node!=to_go_node]:
+                    #     G = nx.contracted_nodes(G, to_go_node, node)
+                    # G.node[to_go_node]['to_go'] = to_go
+                    # G.node[to_go_node]['pos'] = (poses_x, poses_y)
+
+                    poses_x = [G.node[nodes_i[0]]['pos'][0]]
+                    poses_y = [G.node[nodes_i[0]]['pos'][1]]
+                    for node in nodes_i[1:]:
+                        poses_x.append(G.node[node]['pos'][0])
+                        poses_y.append(G.node[node]['pos'][1])
+                        G = nx.contracted_nodes(G, nodes_i[0], node)
                     G.node[nodes_i[0]]['to_go'] = to_go
-                G.node[nodes_i[0]]['pos'] = (sum(poses_x)/len(poses_x), sum(poses_y)/len(poses_y))
+                    G.node[nodes_i[0]]['pos'] = (sum(poses_x)/len(poses_x), sum(poses_y)/len(poses_y))
+
+                    # poses_x = [G.node[to_go_node_list[0]]['pos'][0]]
+                    # poses_y = [G.node[to_go_node_list[0]]['pos'][1]]
+                    # for node in [node for node in nodes_i if node!=to_go_node_list[0]]:
+                    #     poses_x.append(G.node[node]['pos'][0])
+                    #     poses_y.append(G.node[node]['pos'][1])
+                    # poses_avg = (sum(poses_x)/len(poses_x), sum(poses_y)/len(poses_y))
+                    #
+                    # for node in nodes_i[1:]:
+                    #     poses_x.append(G.node[node]['pos'][0])
+                    #     poses_y.append(G.node[node]['pos'][1])
+                    #     G = nx.contracted_nodes(G, nodes_i[0], node)
+                    # G.node[nodes_i[0]]['to_go'] = to_go
+                    # G.node[nodes_i[0]]['pos'] = poses_avg
+                else:
+                    poses_x = [G.node[nodes_i[0]]['pos'][0]]
+                    poses_y = [G.node[nodes_i[0]]['pos'][1]]
+                    for node in nodes_i[1:]:
+                        poses_x.append(G.node[node]['pos'][0])
+                        poses_y.append(G.node[node]['pos'][1])
+                        G = nx.contracted_nodes(G, nodes_i[0], node)
+                    G.node[nodes_i[0]]['to_go'] = to_go
+                    G.node[nodes_i[0]]['pos'] = (sum(poses_x)/len(poses_x), sum(poses_y)/len(poses_y))
+
             else:
                 nodes_i_wo_isrobot = [n for n in nodes_i if n not in isrobot_node]
                 poses_x = [G.node[isrobot_node[0]]['pos'][0]]
